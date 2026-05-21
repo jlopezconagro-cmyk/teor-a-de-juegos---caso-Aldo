@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Árbol de Decisión — Reunión del Viernes</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin:0; padding:0; }
+
+:root {
+  --bg: #ffffff;
+  --bg-secondary: #f8f9fa;
+  --bg-tertiary: #f1f3f5;
+  --border: rgba(0,0,0,0.08);
+  --border-md: rgba(0,0,0,0.14);
+  --text: #1a1d23;
+  --muted: #6b7280;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --green-50: #EAF3DE; --green-100: #C0DD97; --green-200: #97C459;
+  --green-600: #3B6D11; --green-700: #27500A; --green-800: #173404;
+  --amber-50: #FAEEDA; --amber-200: #EF9F27; --amber-600: #854F0B; --amber-700: #633806;
+  --red-50: #FCEBEB; --red-100: #F7C1C1; --red-200: #F09595; --red-600: #A32D2D; --red-700: #791F1F;
+  --purple-50: #EEEDFE; --purple-600: #3C3489;
+  --blue-50: #E6F1FB; --blue-600: #185FA5;
+  --coral-50: #FAECE7; --coral-600: #993C1D;
+  --gray-50: #F1EFE8; --gray-600: #5F5E5A;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg-tertiary);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 2rem 1rem;
+  line-height: 1.5;
+}
+
+.container { max-width: 900px; margin: 0 auto; }
+
+/* Header */
+.header {
+  background: var(--bg);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem 1.75rem;
+  margin-bottom: 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.header h1 { font-size: 22px; font-weight: 600; line-height: 1.2; }
+.header h1 span { color: var(--green-600); }
+.header p { font-size: 13px; color: var(--muted); margin-top: 3px; }
+.obj-pill {
+  background: var(--green-50); border: 0.5px solid var(--green-200);
+  border-radius: 999px; padding: 5px 14px;
+  font-size: 12px; color: var(--green-600); font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Card base */
+.card {
+  background: var(--bg);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin-bottom: 1.25rem;
+}
+.card-body { padding: 1.25rem 1.5rem; }
+.section-lbl {
+  font-size: 11px; font-weight: 600; color: var(--muted);
+  letter-spacing: 0.08em; text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+/* Prob bar */
+.prob-bar { display:flex; height:8px; border-radius:999px; overflow:hidden; border: 0.5px solid var(--border); margin-bottom: 8px; }
+.prob-legend { display:flex; gap:12px; flex-wrap:wrap; }
+.prob-leg-item { display:flex; align-items:center; gap:5px; font-size:12px; color: var(--muted); }
+.prob-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+
+/* Posture toggle */
+.posture-toggle { display:flex; gap:8px; flex-wrap:wrap; margin-bottom: 1rem; }
+.posture-btn {
+  padding: 8px 16px; border-radius: var(--radius-md);
+  border: 0.5px solid var(--border-md);
+  background: var(--bg); color: var(--muted);
+  font-size: 13px; cursor:pointer;
+  display:flex; align-items:center; gap:6px;
+  font-family: inherit; transition: all 0.15s;
+}
+.posture-btn:hover { background: var(--bg-secondary); }
+.posture-btn.active-firm { background: var(--green-50); border-color: var(--green-200); color: var(--green-600); font-weight: 500; }
+.posture-btn.active-cede { background: var(--amber-50); border-color: var(--amber-200); color: var(--amber-600); font-weight: 500; }
+.posture-btn i { font-size: 17px; }
+
+.posture-indicator {
+  display:flex; align-items:flex-start; gap:10px;
+  padding: 10px 14px; border-radius: var(--radius-md);
+  font-size: 13px; border: 0.5px solid;
+  margin-bottom: 1rem; line-height: 1.5;
+}
+.posture-indicator.firm { background: var(--green-50); border-color: var(--green-200); color: var(--green-600); }
+.posture-indicator.cede { background: var(--amber-50); border-color: var(--amber-200); color: var(--amber-600); }
+.posture-indicator i { font-size: 19px; flex-shrink: 0; margin-top: 1px; }
+
+/* EV cards */
+.ev-bar { display:flex; gap:8px; flex-wrap:wrap; margin-bottom: 1.25rem; }
+.ev-card {
+  flex:1; min-width:130px; padding: 10px 14px;
+  border-radius: var(--radius-md);
+  border: 0.5px solid var(--border);
+  background: var(--bg-secondary);
+}
+.ev-card.highlighted { background: var(--green-50); border-color: var(--green-200); }
+.ev-label { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+.ev-value { font-size: 22px; font-weight: 600; color: var(--text); }
+.ev-card.highlighted .ev-value { color: var(--green-600); }
+.ev-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+/* Scenarios */
+.scenarios-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap:10px; }
+.sc-card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); overflow:hidden; }
+.sc-top { height: 3px; }
+.sc-header { padding: 12px 14px 8px; display:flex; gap:10px; align-items:flex-start; }
+.sc-letter { font-size: 24px; font-weight: 600; line-height: 1; flex-shrink: 0; }
+.sc-title { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 2px; }
+.sc-prob { font-size: 12px; color: var(--muted); }
+.sc-prob strong { font-weight: 600; }
+.sc-body { padding: 0 14px 14px; }
+.sc-sig-lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+.sc-sig { font-size: 12px; color: var(--muted); padding-left: 10px; position: relative; margin-bottom: 2px; line-height: 1.4; }
+.sc-sig::before { content:"›"; position:absolute; left:0; }
+
+.response-box {
+  border-left: 2px solid;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  padding: 8px 10px; font-size: 12px; font-style: italic;
+  color: var(--text); margin-bottom: 10px; line-height: 1.5;
+  background: var(--bg-secondary);
+}
+.appease-box {
+  border-left: 2px solid var(--amber-200);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  padding: 8px 10px; font-size: 12px;
+  margin-bottom: 10px; line-height: 1.5;
+  background: var(--amber-50);
+}
+.appease-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.07em; font-weight: 600; color: var(--amber-600); margin-bottom: 3px; }
+.appease-effect { font-size: 12px; color: var(--amber-700); }
+
+.payoff-row { display:flex; align-items:center; gap:8px; margin-bottom: 10px; flex-wrap:wrap; }
+.stars-label { font-size: 11px; color: var(--muted); }
+.stars { font-size: 14px; }
+.delta-badge { font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 500; }
+.delta-bad { background: var(--red-50); color: var(--red-600); }
+.delta-neutral { background: var(--gray-50); color: var(--gray-600); }
+
+.dos-donts { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+.do-block { background: var(--green-50); border: 0.5px solid var(--green-200); border-radius: var(--radius-md); padding: 8px; }
+.dont-block { background: var(--red-50); border: 0.5px solid var(--red-200); border-radius: var(--radius-md); padding: 8px; }
+.block-lbl { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+.do-block .block-lbl { color: var(--green-600); }
+.dont-block .block-lbl { color: var(--red-600); }
+.block-item { font-size: 11px; padding-left: 10px; position: relative; margin-bottom: 2px; line-height: 1.4; }
+.do-block .block-item { color: var(--green-700); }
+.dont-block .block-item { color: var(--red-700); }
+.do-block .block-item::before { content:"✓"; position:absolute; left:0; color: var(--green-200); }
+.dont-block .block-item::before { content:"✗"; position:absolute; left:0; color: var(--red-200); }
+
+/* Matrix */
+.matrix-table { width:100%; border-collapse:collapse; font-size: 12px; }
+.matrix-table th { font-size: 11px; font-weight: 500; color: var(--muted); text-align: center; padding: 8px; border-bottom: 0.5px solid var(--border); }
+.matrix-table th:first-child { text-align: left; }
+.matrix-table td { padding: 8px; text-align: center; border-bottom: 0.5px solid var(--border); vertical-align: middle; }
+.matrix-table tr:last-child td { border-bottom: none; }
+.matrix-table td:first-child { text-align: left; font-size: 12px; color: var(--text); }
+.matrix-table .row-highlight td:first-child { color: var(--green-600); font-weight: 500; }
+.mc { display:inline-block; border-radius: var(--radius-md); padding: 5px 10px; font-size: 13px; font-weight: 500; }
+.mc-good { background: var(--green-50); color: var(--green-600); }
+.mc-mid { background: var(--amber-50); color: var(--amber-600); }
+.mc-bad { background: var(--red-50); color: var(--red-600); }
+.mc-worst { background: var(--red-100); color: var(--red-700); }
+.cell-desc { font-size: 10px; color: var(--muted); margin-top: 3px; line-height: 1.3; }
+.nash-note { font-size: 12px; color: var(--muted); margin-top: 10px; line-height: 1.5; }
+.nash-note strong { color: var(--green-600); }
+
+/* Golden rule */
+.golden-box {
+  background: var(--green-50); border: 0.5px solid var(--green-200);
+  border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; text-align: center;
+}
+.golden-lbl { font-size: 11px; color: var(--green-600); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+.golden-text { font-size: 22px; font-weight: 600; color: var(--green-700); }
+.golden-sub { font-size: 12px; color: var(--green-600); margin-top: 5px; }
+
+/* Phrases */
+.phrases-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:8px; }
+.phrase-chip {
+  background: var(--bg); border: 0.5px solid var(--border);
+  border-radius: var(--radius-md); padding: 8px 10px;
+  font-size: 12px; color: var(--text); line-height: 1.5;
+}
+.phrase-chip::before { content:'" '; color: var(--green-600); font-size: 16px; line-height: 0.6; }
+
+/* Warning */
+.warning-box {
+  background: var(--amber-50); border: 0.5px solid var(--amber-200);
+  border-radius: var(--radius-lg); padding: 1rem 1.25rem;
+  display: flex; gap: 12px; align-items: flex-start;
+}
+.warning-icon { font-size: 20px; color: var(--amber-600); padding-top: 1px; flex-shrink: 0; }
+.warning-title { font-size: 13px; font-weight: 500; color: var(--amber-600); margin-bottom: 6px; }
+.warning-item { font-size: 12px; color: var(--amber-700); padding-left: 10px; position: relative; margin-bottom: 3px; }
+.warning-item::before { content:"▸"; position:absolute; left:0; color: var(--amber-200); }
+
+/* Spacer util */
+.mb { margin-bottom: 1.25rem; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <div>
+      <h1>Árbol de Decisión — <span>Reunión del Viernes</span></h1>
+      <p>Caso Aldo / Tuxtla · Teoría de juegos · Análisis de posturas</p>
+    </div>
+    <div class="obj-pill">Objetivo: Cerrar sin ambigüedad</div>
+  </div>
+
+  <!-- Prob bar -->
+  <div class="card mb">
+    <div class="card-body">
+      <div class="section-lbl">Distribución de probabilidad — escenarios de Aldo</div>
+      <div class="prob-bar" id="probBar"></div>
+      <div class="prob-legend" id="probLegend"></div>
+    </div>
+  </div>
+
+  <!-- Posture selector + EV -->
+  <div class="card mb">
+    <div class="card-body">
+      <div class="section-lbl">Tu postura en la reunión</div>
+      <div class="posture-toggle">
+        <button class="posture-btn active-firm" onclick="setPosture('firm')" id="btn-firm">
+          <i class="ti ti-shield-check"></i> Firme y calmado
+        </button>
+        <button class="posture-btn" onclick="setPosture('cede')" id="btn-cede">
+          <i class="ti ti-door-enter"></i> Ceder parcialmente (appeasement)
+        </button>
+      </div>
+      <div class="posture-indicator firm" id="postureIndicator">
+        <i class="ti ti-shield-check"></i>
+        <div><strong>Postura firme y calmada</strong> — estrategia dominante. Produce el mejor resultado esperado sin importar cómo llegue Aldo.</div>
+      </div>
+      <div class="ev-bar" id="evBar"></div>
+    </div>
+  </div>
+
+  <!-- Scenario cards -->
+  <div class="section-lbl" style="padding:0 4px">Escenarios de Aldo y tu respuesta óptima</div>
+  <div class="scenarios-grid mb" id="scenariosGrid"></div>
+
+  <!-- Matrix -->
+  <div class="card mb">
+    <div class="card-body">
+      <div class="section-lbl">Matriz de pagos — teoría de juegos</div>
+      <div style="overflow-x:auto">
+        <table class="matrix-table">
+          <thead>
+            <tr>
+              <th>Tu postura</th>
+              <th>Aldo cooperativo<br><span style="font-size:10px;opacity:.7;font-weight:400">A, C, E — 65%</span></th>
+              <th>Aldo difícil<br><span style="font-size:10px;opacity:.7;font-weight:400">B, D — 35%</span></th>
+              <th>Valor esperado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="row-highlight">
+              <td><i class="ti ti-shield-check" style="vertical-align:-2px;margin-right:4px;color:#3B6D11"></i>Firme y calmado</td>
+              <td><div class="mc mc-good">★★★</div><div class="cell-desc">Cierre limpio</div></td>
+              <td><div class="mc mc-good">★★★</div><div class="cell-desc">Límite sostenido</div></td>
+              <td><div class="mc mc-good">★★★</div><div class="cell-desc">2.90 / 3.00</div></td>
+            </tr>
+            <tr>
+              <td><i class="ti ti-door-enter" style="vertical-align:-2px;margin-right:4px;color:#BA7517"></i>Ceder parcialmente</td>
+              <td><div class="mc mc-mid">★★☆</div><div class="cell-desc">Reabre ambigüedad</div></td>
+              <td><div class="mc mc-bad">★☆☆</div><div class="cell-desc">Confirma que presionar funciona</div></td>
+              <td><div class="mc mc-mid">★½☆</div><div class="cell-desc">1.55 / 3.00</div></td>
+            </tr>
+            <tr>
+              <td><i class="ti ti-flame" style="vertical-align:-2px;margin-right:4px;color:#993C1D"></i>Agresivo / reactivo</td>
+              <td><div class="mc mc-bad">★☆☆</div><div class="cell-desc">Escala innecesario</div></td>
+              <td><div class="mc mc-worst">☆☆☆</div><div class="cell-desc">Conflicto abierto</div></td>
+              <td><div class="mc mc-worst">☆☆☆</div><div class="cell-desc">0.80 / 3.00</div></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="nash-note">
+        <i class="ti ti-info-circle" style="vertical-align:-2px;margin-right:4px"></i>
+        Nash equilibrium: <strong>postura firme y calmada</strong> es estrategia dominante — gana en todos los escenarios. Ceder por miedo (appeasement) nunca mejora el resultado y en B/D lo empeora significativamente.
+      </div>
+    </div>
+  </div>
+
+  <!-- Golden rule -->
+  <div class="golden-box mb">
+    <div class="golden-lbl">Regla de oro</div>
+    <div class="golden-text">Claridad sin agresión</div>
+    <div class="golden-sub">Postura simple · No negociar desde el miedo · No dejar puertas abiertas</div>
+  </div>
+
+  <!-- Phrases -->
+  <div class="card mb">
+    <div class="card-body">
+      <div class="section-lbl">Frases clave — repetir si se atora la conversación</div>
+      <div class="phrases-grid" id="phrasesGrid"></div>
+    </div>
+  </div>
+
+  <!-- Warning -->
+  <div class="warning-box">
+    <i class="ti ti-alert-triangle warning-icon"></i>
+    <div>
+      <div class="warning-title">No salir de la reunión con…</div>
+      <div id="warningItems"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const SCENARIOS = [
+  {
+    letter:"A", color:"#639922", prob:0.20,
+    title:"Conciliador y acepta distancia",
+    signals:["Habla calmado, evita confrontación","No insiste en alianza","Reconoce aunque sea parcialmente el daño"],
+    firm:{ msg:'"No queremos problemas contigo ni dañarte. Lo más sano es que cada quien siga su camino."', dos:["Cerrar cordialmente","Mantener límites claros","No reabrir operación"], donts:["Revivir el expediente","Abrir relación ambigua","Prometer alianza futura"], stars:"★★★", starsRaw:3 },
+    cede:{ effect:"Aldo interpreta la apertura como validación de que tenía razón. La ambigüedad que cierras hoy reaparece en 3 meses con más fuerza.", stars:"★★☆", starsRaw:2, delta:"−1 vs firme" }
+  },
+  {
+    letter:"B", color:"#BA7517", prob:0.25,
+    title:"Insiste en alianza / presión comercial",
+    signals:['"Nos conviene trabajar juntos"','"Los clientes son míos"','"Si no me apoyan me voy con competencia"'],
+    firm:{ msg:'"Entendemos tu postura, pero por la situación y estabilidad interna lo mejor es mantener caminos separados."', dos:["Repetir postura consistente","No discutir quién tiene clientes","No negociar desde el miedo"], donts:["Entrar al bluff","Negociar apresuradamente","Dejar puerta medio abierta"], stars:"★★★", starsRaw:3 },
+    cede:{ effect:"Confirmaste que la presión funciona. La próxima vez subirá la apuesta. Quedas en posición permanentemente débil.", stars:"★☆☆", starsRaw:1, delta:"−2 vs firme" }
+  },
+  {
+    letter:"C", color:"#534AB7", prob:0.30,
+    title:"Se victimiza / minimiza todo",
+    signals:['"Yo salí limpio"','"Me quieren cargar el muerto"','"No fue para tanto"'],
+    firm:{ msg:'"Más allá de interpretaciones, sí hubo situaciones que afectaron operación y confianza. No queremos seguir dándole vueltas."', dos:["Cortar discusión circular","Regresar a hechos","Mantener foco en el cierre"], donts:["Tratar de convencerlo","Entrar en debate infinito","Elevar tono emocional"], stars:"★★★", starsRaw:3 },
+    cede:{ effect:"Lo lee como validación de su narrativa: tenían algo que ocultar. No cierra el conflicto, lo alimenta.", stars:"★☆☆", starsRaw:1, delta:"−2 vs firme" }
+  },
+  {
+    letter:"D", color:"#993C1D", prob:0.10,
+    title:"Agresivo / emocional",
+    signals:["Enojo, amenazas, elevar voz","Culpar a todos","Provocaciones directas"],
+    firm:{ msg:'"No queremos problemas ni escalar esto. Si no podemos hablar tranquilos, mejor dejamos aquí la conversación."', dos:["Terminar reunión si escala","Máxima calma, mínima emoción","Documentar si ocurre algo grave"], donts:["Responder provocación",'"Ponerlo en su lugar"',"Engancharse emocionalmente"], stars:"★★☆", starsRaw:2 },
+    cede:{ effect:"El más peligroso. Si amenaza y cedes, aprende que amenazar funciona. Garantizas una segunda ronda más difícil.", stars:"☆☆☆", starsRaw:0, delta:"−2 vs firme" }
+  },
+  {
+    letter:"E", color:"#185FA5", prob:0.15,
+    title:"Acepta irse y competir por fuera",
+    signals:["Acepta separación sin drama","Habla de sus planes independientes","Actitud pragmática"],
+    firm:{ msg:'"Es válido. Nosotros seguiremos enfocados en fortalecer nuestra operación."', dos:["Aceptar realidad del mercado","Enfocarse en clientes y cultura","Dejar de vivir alrededor de él"], donts:["Intentar retenerlo","Preocuparse por competencia","Abrir negociación de última hora"], stars:"★★★", starsRaw:3 },
+    cede:{ effect:"Cediste innecesariamente. Él ya estaba listo para irse — solo debilitaste tu posición sin ningún beneficio real.", stars:"★★☆", starsRaw:2, delta:"−1 vs firme" }
+  }
+];
+
+const PHRASES = ["No queremos problemas.","No buscamos dañarte.","Creemos que lo más sano es separar caminos.","La confianza operativa sí se afectó.","Queremos cerrar esto de manera tranquila.","No queremos seguir prolongando el conflicto."];
+const WARNINGS = ["Acuerdos ambiguos o promesas vagas","Relación híbrida (ni dentro ni fuera)","\"Vemos luego\" — sin cierre claro","Puerta medio abierta en operación o alianzas futuras"];
+
+let posture = 'firm';
+
+function buildProbBar() {
+  const bar = document.getElementById('probBar');
+  const leg = document.getElementById('probLegend');
+  SCENARIOS.forEach(s => {
+    const seg = document.createElement('div');
+    seg.style.cssText = `width:${s.prob*100}%;background:${s.color};`;
+    bar.appendChild(seg);
+    const li = document.createElement('div');
+    li.className = 'prob-leg-item';
+    li.innerHTML = `<div class="prob-dot" style="background:${s.color}"></div>${s.letter}: ${Math.round(s.prob*100)}%`;
+    leg.appendChild(li);
+  });
+}
+
+function buildEV() {
+  const evBar = document.getElementById('evBar');
+  evBar.innerHTML = '';
+  const firmEV = SCENARIOS.reduce((a,s) => a + s.prob * s.firm.starsRaw, 0);
+  const cedeEV = SCENARIOS.reduce((a,s) => a + s.prob * s.cede.starsRaw, 0);
+  const data = [
+    { label:'Valor esperado — Firme', val:firmEV, cls: posture==='firm' ? 'highlighted' : '' },
+    { label:'Valor esperado — Ceder', val:cedeEV, cls: posture==='cede' ? 'highlighted' : '' },
+    { label:'Diferencia', val:firmEV - cedeEV, sub:'ventaja de postura firme', cls:'' },
+  ];
+  data.forEach(d => {
+    const card = document.createElement('div');
+    card.className = 'ev-card ' + d.cls;
+    card.innerHTML = `<div class="ev-label">${d.label}</div><div class="ev-value">${d.val.toFixed(2)}<span style="font-size:13px;font-weight:400;color:var(--muted)"> / 3.00</span></div>${d.sub ? `<div class="ev-sub">${d.sub}</div>` : ''}`;
+    evBar.appendChild(card);
+  });
+}
+
+function buildScenarios() {
+  const grid = document.getElementById('scenariosGrid');
+  grid.innerHTML = '';
+  SCENARIOS.forEach(s => {
+    const d = posture === 'firm' ? s.firm : s.cede;
+    let bodyHTML = '';
+    if (posture === 'firm') {
+      bodyHTML = `
+        <div class="response-box" style="border-color:${s.color}">${d.msg}</div>
+        <div class="payoff-row">
+          <span class="stars-label">Resultado:</span>
+          <span class="stars">${d.stars}</span>
+        </div>
+        <div class="dos-donts">
+          <div class="do-block"><div class="block-lbl">Hacer</div>${d.dos.map(x=>`<div class="block-item">${x}</div>`).join('')}</div>
+          <div class="dont-block"><div class="block-lbl">No hacer</div>${d.donts.map(x=>`<div class="block-item">${x}</div>`).join('')}</div>
+        </div>`;
+    } else {
+      const dc = d.starsRaw <= 1 ? 'delta-bad' : 'delta-neutral';
+      bodyHTML = `
+        <div class="appease-box">
+          <div class="appease-label">Efecto del appeasement</div>
+          <div class="appease-effect">${d.effect}</div>
+        </div>
+        <div class="payoff-row">
+          <span class="stars-label">Resultado:</span>
+          <span class="stars">${d.stars}</span>
+          <span class="delta-badge ${dc}">${d.delta}</span>
+        </div>`;
+    }
+    const card = document.createElement('div');
+    card.className = 'sc-card';
+    card.innerHTML = `
+      <div class="sc-top" style="background:${s.color}"></div>
+      <div class="sc-header">
+        <div class="sc-letter" style="color:${s.color}">${s.letter}</div>
+        <div>
+          <div class="sc-title">${s.title}</div>
+          <div class="sc-prob">Probabilidad: <strong style="color:${s.color}">${Math.round(s.prob*100)}%</strong></div>
+        </div>
+      </div>
+      <div class="sc-body">
+        <div class="sc-sig-lbl">Señales</div>
+        ${s.signals.map(x=>`<div class="sc-sig">${x}</div>`).join('')}
+        <div style="margin-top:10px">${bodyHTML}</div>
+      </div>`;
+    grid.appendChild(card);
+  });
+}
+
+function setPosture(p) {
+  posture = p;
+  document.getElementById('btn-firm').className = 'posture-btn' + (p==='firm' ? ' active-firm' : '');
+  document.getElementById('btn-cede').className = 'posture-btn' + (p==='cede' ? ' active-cede' : '');
+  const ind = document.getElementById('postureIndicator');
+  if (p === 'firm') {
+    ind.className = 'posture-indicator firm';
+    ind.innerHTML = '<i class="ti ti-shield-check"></i><div><strong>Postura firme y calmada</strong> — estrategia dominante. Produce el mejor resultado esperado sin importar cómo llegue Aldo.</div>';
+  } else {
+    ind.className = 'posture-indicator cede';
+    ind.innerHTML = '<i class="ti ti-alert-triangle"></i><div><strong>Ceder parcialmente (appeasement)</strong> — el valor esperado cae de 2.90 a 1.55. Empeora especialmente en B y D, los escenarios donde más importa sostener el límite.</div>';
+  }
+  buildEV();
+  buildScenarios();
+}
+
+// Build static elements
+buildProbBar();
+buildEV();
+buildScenarios();
+document.getElementById('phrasesGrid').innerHTML = PHRASES.map(p => `<div class="phrase-chip">${p}</div>`).join('');
+document.getElementById('warningItems').innerHTML = WARNINGS.map(w => `<div class="warning-item">${w}</div>`).join('');
+</script>
+</body>
+</html>
